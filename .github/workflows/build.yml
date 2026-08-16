@@ -1,0 +1,46 @@
+name: Build Marlin
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout my config files
+        uses: actions/checkout@v4
+
+      - name: Checkout Marlin source (latest bugfix-2.1.x)
+        uses: actions/checkout@v4
+        with:
+          repository: MarlinFirmware/Marlin
+          ref: bugfix-2.1.x
+          path: Marlin-src
+
+      - name: Copy my Configuration files into Marlin source
+        run: |
+          cp Configuration.h Marlin-src/Marlin/Configuration.h
+          cp Configuration_adv.h Marlin-src/Marlin/Configuration_adv.h
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install -U platformio
+
+      - name: Build firmware for MKS Robin Nano (Kingroon KP3S)
+        working-directory: Marlin-src
+        run: pio run -e mks_robin_nano35
+
+      - name: Rename output file
+        run: cp Marlin-src/.pio/build/mks_robin_nano35/Robin_nano35.bin Robin_nano.bin
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Robin_nano
+          path: Robin_nano.bin
